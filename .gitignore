@@ -1,49 +1,97 @@
-# History files
-.Rhistory
-.Rapp.history
+# Load necessary libraries
+library(shiny)
+library(tidyverse)
+library(DT)
 
-# Session Data files
-.RData
-.RDataTmp
+# Load the dataset
+graduate_survey <- read.csv("~/Desktop/teemp/graduate_survey.csv")
 
-# User-specific files
-.Ruserdata
+# Data Cleaning and Preprocessing
+# Select relevant columns
+survey_data <- graduate_survey %>%
+  select(Campus, StudyField, Branch, Role, EduLevel, ProgLang, Databases, Platform, WebFramework, Industry, AISearch, AITool, Employment)
 
-# Example code in package build process
-*-Ex.R
+# Standardize Campus names
+survey_data$Campus <- recode(survey_data$Campus, "Durban" = "Durban-Umlhanga", "Umlhanga" = "Durban-Umlhanga")
 
-# Output files from R CMD build
-/*.tar.gz
+# Define UI
+ui <- fluidPage(
+  
+  # Dashboard Title
+  titlePanel("Eduvos Graduate Survey Dashboard"),
+  
+  # Sidebar Layout
+  sidebarLayout(
+    
+    # Sidebar Panel
+    sidebarPanel(
+      selectInput("campus", "Select Campus:", choices = unique(survey_data$Campus)),
+      selectInput("studyField", "Select Study Field:", choices = unique(survey_data$StudyField)),
+      actionButton("update", "Update")
+    ),
+    
+    # Main Panel
+    mainPanel(
+      tabsetPanel(
+        
+        # Overview Tab
+        tabPanel("Overview",
+                 plotOutput("langPlot"),
+                 plotOutput("dbPlot")),
+        
+        # Data Table Tab
+        tabPanel("Data Table", DTOutput("dataTable"))
+      )
+    )
+  )
+)
 
-# Output files from R CMD check
-/*.Rcheck/
+# Define Server
+server <- function(input, output) {
+  
+  # Filtered Data
+  filtered_data <- reactive({
+    survey_data %>%
+      filter(Campus == input$campus, StudyField == input$studyField)
+  })
+  
+  # Programming Languages Plot
+  output$langPlot <- renderPlot({
+    filtered_data() %>%
+      separate_rows(ProgLang, sep = ",") %>%
+      count(ProgLang, sort = TRUE) %>%
+      ggplot(aes(x = reorder(ProgLang, n), y = n, fill = ProgLang)) +
+      geom_col() +
+      coord_flip() +
+      theme_minimal() +
+      labs(title = "Popular Programming Languages", x = "Language", y = "Count")
+  })
+  
+  # Databases Plot
+  output$dbPlot <- renderPlot({
+    filtered_data() %>%
+      separate_rows(Databases, sep = ",") %>%
+      count(Databases, sort = TRUE) %>%
+      ggplot(aes(x = reorder(Databases, n), y = n, fill = Databases)) +
+      geom_col() +
+      coord_flip() +
+      theme_minimal() +
+      labs(title = "Most Used Databases", x = "Database", y = "Count")
+  })
+  
+  # Data Table Output
+  output$dataTable <- renderDT({
+    datatable(filtered_data())
+  })
+}
 
-# RStudio files
-.Rproj.user/
+# Run the Shiny App
+shinyApp(ui = ui, server = server)
 
-# produced vignettes
-vignettes/*.html
-vignettes/*.pdf
 
-# OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
-.httr-oauth
+install.packages(c("shiny", "tidyverse", "DT"))
+shiny::runApp("~/Desktop/teemp/graduate_survey.csv")
 
-# knitr and R markdown default cache directories
-*_cache/
-/cache/
-
-# Temporary files created by R markdown
-*.utf8.md
-*.knit.md
-
-# R Environment Variables
-.Renviron
-
-# pkgdown site
-docs/
-
-# translation temp files
-po/*~
 
 # RStudio Connect folder
 rsconnect/
