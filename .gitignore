@@ -93,5 +93,3 @@ install.packages(c("shiny", "tidyverse", "DT"))
 shiny::runApp("~/Desktop/teemp/graduate_survey.csv")
 
 
-# RStudio Connect folder
-rsconnect/
